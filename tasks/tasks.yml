@@ -1,0 +1,36 @@
+---
+
+- name: Creates directory
+  file:
+    path: /root/docker/buildbot/
+    state: directory
+    owner: root
+    group: root
+    mode: 0600
+
+- name: Copy ssh keys
+  copy:
+    src: "config/docker/buildbot/{{ item }}"
+    dest: "/root/docker/buildbot/{{ item }}"
+    owner: root
+    group: root
+    mode: 0600
+  with_items:
+  - ssh/gitlab
+  - ssh/config
+  - ssh/known_hosts
+
+- name: Install buildbot worker image
+  docker_container:
+    name: buildbot_worker
+    image: "{{ docker_buildbot_worker_image }}"
+    memory: 3000M
+    restart_policy: 'always'
+    env:
+      BUILDBOT_MASTER=localhost
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - /root/docker/buildbot/ssh:/root/.ssh
+    network_mode: host
+    purge_networks: yes
+    networks_cli_compatible: yes
